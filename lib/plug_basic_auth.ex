@@ -25,7 +25,6 @@ defmodule PlugBasicAuth.Helpers do
 end
 
 defmodule PlugBasicAuth do
-  import Logger
 
   import Plug.Conn, only: [get_req_header:  2,
                            put_resp_header: 3,
@@ -38,7 +37,6 @@ defmodule PlugBasicAuth do
   end
 
   def call(conn, mod) do
-    Logger.info("Starting call")
     {conn, creds} = conn |> get_auth_header |> parse_auth
     ret = mod.do_auth(conn.path_info).(conn, creds)
     if ret[:do] == false do
