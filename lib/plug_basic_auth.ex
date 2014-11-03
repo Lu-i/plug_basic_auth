@@ -18,7 +18,7 @@ defmodule PlugBasicAuth.Helpers do
     {_vars, match} = Plug.Router.Utils.build_match(path)
     quote do
       def do_auth(unquote(match)) do
-        fn (var!(conn),var!(opts)) -> unquote(contents) end
+        fn (var!(conn),var!(user),var!(pass)) -> unquote(contents) end
       end
     end
   end
@@ -38,7 +38,8 @@ defmodule PlugBasicAuth do
 
   def call(conn, mod) do
     {conn, creds} = conn |> get_auth_header |> parse_auth
-    ret = mod.do_auth(conn.path_info).(conn, creds)
+    [user,pass] = String.split(creds,":")
+    ret = mod.do_auth(conn.path_info).(conn, user, pass)
     if ret[:do] == false do
       conn
       |> put_resp_header("Www-Authenticate", "Basic realm=\"Private Area\"")
