@@ -8,9 +8,9 @@ defmodule PlugBasicAuth.Helpers do
   
   defmacro __before_compile__(_) do
     quote do
-      PlugBasicAuth.Helpers.auth _ do
-        true
-      end
+#      PlugBasicAuth.Helpers.auth _ do
+#        true
+#      end
     end
   end
 
