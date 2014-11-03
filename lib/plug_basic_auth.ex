@@ -25,7 +25,7 @@ defmodule PlugBasicAuth.Helpers do
 end
 
 defmodule PlugBasicAuth do
-
+  require Plug.Conn
   import Plug.Conn, only: [get_req_header:  2,
                            put_resp_header: 3,
                            send_resp:       3,
