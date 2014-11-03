@@ -38,7 +38,12 @@ defmodule PlugBasicAuth do
 
   def call(conn, mod) do
     {conn, creds} = conn |> get_auth_header |> parse_auth
-    [user,pass] = String.split(creds,":")
+    unless is_nil(creds) do
+      [user,pass] = String.split(creds,":")
+    else 
+      user = nil
+      pass = nil
+    end
     ret = mod.do_auth(conn.path_info).(conn, user, pass)
     if ret[:do] == false do
       conn
