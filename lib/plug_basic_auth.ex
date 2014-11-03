@@ -1,53 +1,54 @@
-defmodule PlugBasicAuth do
-  @moduledoc """
-  A plug for protecting routers with HTTP Basic Auth.
-
-  It expects a `:username` and `:password` to be passed as
-  binaries at initialization.
-
-  The user will be prompted for a username and password upon
-  accessing any of the routes using this plug.
-
-  If the username and password are correct, the user will be
-  able to access the page.
-
-  If the username and password are incorrect, the user will be
-  prompted to enter them again.
-
-  ## Example
-
-      defmodule TopSecret do
-        import Plug.Conn
-        use Plug.Router
-
-        plug PlugBasicAuth, username: "Snorky", password: "Capone"
-        plug :match
-        plug :dispatch
-
-        get '/speakeasy' do
-          conn
-          |> put_resp_content_type("text/plain")
-          |> send_resp(200, "Welcome to the party.")
-        end
+defmodule PlugBasicAuth.Helpers do
+  defmacro __using__(opts) do
+    quote do
+      import unquote(__MODULE__)
+      @before_compile unquote(__MODULE__)
+    end
+  end
+  
+  defmacro __before_compile__(_) do
+    quote do
+      PlugBasicAuth.Helpers.auth _ do
+        true
       end
-  """
+    end
+  end
+
+  defmacro auth(path, contents) do
+    {_vars, match} = Plug.Router.Utils.build_match(path)
+    quote do
+      def do_auth(unquote(match)) do
+        fn (var!(conn),var!(opts)) -> unquote(contents) end
+      end
+    end
+  end
+end
+
+defmodule PlugBasicAuth do
+  import Logger
 
   import Plug.Conn, only: [get_req_header:  2,
                            put_resp_header: 3,
                            send_resp:       3,
                            halt:            1]
+  
 
   def init(opts) do
-    username = Keyword.fetch!(opts, :username)
-    password = Keyword.fetch!(opts, :password)
-    username <> ":" <> password
+    Keyword.fetch!(opts, :module)
   end
 
-  def call(conn, server_creds) do
-    conn
-    |> get_auth_header
-    |> parse_auth
-    |> check_creds(server_creds)
+  def call(conn, mod) do
+    Logger.info("Starting call")
+    {conn, creds} = conn |> get_auth_header |> parse_auth
+    ret = mod.do_auth(conn.path_info).(conn, creds)
+    if ret[:do] == false do
+      conn
+      |> put_resp_header("Www-Authenticate", "Basic realm=\"Private Area\"")
+      |> send_resp(401, "")
+      |> halt    
+    else
+      conn
+    end
   end
 
   defp get_auth_header(conn) do
@@ -60,11 +61,6 @@ defmodule PlugBasicAuth do
     {conn, decoded_creds}
   end
   defp parse_auth({conn, _}), do: {conn, nil}
-
-  defp check_creds({conn, decoded_creds}, server_creds) when decoded_creds == server_creds do
-    conn
-  end
-  defp check_creds({conn, _}, _), do: respond_with_login(conn)
 
   defp respond_with_login(conn) do
     conn
