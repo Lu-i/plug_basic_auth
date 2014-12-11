@@ -14,8 +14,12 @@ defmodule PlugBasicAuth.Helpers do
     end
   end
 
+
+  defp extract_path({:_, _, var}) when is_atom(var), do: "/*_path"
+  defp extract_path(path), do: path
+
   defmacro auth(path, contents) do
-    {_vars, match} = Plug.Router.Utils.build_path_match(path)
+    {_vars, match} = Plug.Router.Utils.build_path_match(extract_path(path))
     quote do
       def do_auth(unquote(match)) do
         fn (var!(conn),var!(user),var!(pass)) -> unquote(contents) end
