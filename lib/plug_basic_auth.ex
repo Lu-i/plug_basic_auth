@@ -15,7 +15,7 @@ defmodule PlugBasicAuth.Helpers do
   end
 
   defmacro auth(path, contents) do
-    {_vars, match} = Plug.Router.Utils.build_match(path)
+    {_vars, match} = Plug.Router.Utils.build_path_match(path)
     quote do
       def do_auth(unquote(match)) do
         fn (var!(conn),var!(user),var!(pass)) -> unquote(contents) end
